@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="$ucc3$$n0w" database="test" doc:name="MySQL Configuration"/>
+    <flow name="mulecognizantFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
+        <set-session-variable variableName="imMemoryDatabase" value="#[new java.util.HashMap()]" doc:name="Session Variable"/>
+        <json:xml-to-json-transformer doc:name="XML to JSON"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <set-variable variableName="payloadInicial" value="#[payload]" doc:name="payloadInicial"/>
+        <flow-ref name="muleTratamentUsuario" doc:name="muleTratamentUsuario"/>
+        <flow-ref name="EnderecoFlow" doc:name="EnderecoFlow"/>
+        <flow-ref name="gravaUsuario" doc:name="gravaUsuario"/>
+    	
+    </flow>
+    <sub-flow name="muleTratamentUsuario">
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/Json
+---
+{
+  usuario: {
+    nome: payload.Usuarios.usuario.nome,
+    sobrenome: payload.Usuarios.usuario.sobrenome,
+    telefone: payload.Usuarios.usuario.telefone,
+    (sexo : "Masculino") when (payload.Usuarios.usuario.sexo) == "M",
+    (sexo : "Feminino") when (payload.Usuarios.usuario.sexo) == "F",
+    (UsuarioAtivo: "Sim") when (payload.Usuarios.usuario.ativo) == "S",
+    (UsuarioAtivo: "Não") when (payload.Usuarios.usuario.ativo) == "N"
+    
+  }
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <set-variable variableName="jsonUsuario" value="#[payload]" doc:name="usuario"/>
+    </sub-flow>
+    <sub-flow name="EnderecoFlow">
+        <set-variable variableName="EnderecoPadrao" value="#[payload]" doc:name="EnderecoPadrao"/>
+        <set-payload value="#[payloadInicial]" doc:name="Set Payload"/>
+        <json:json-to-object-transformer doc:name="JSON to Object"/>
+        <set-variable variableName="nomeUsuario" value="#[payload.get(&quot;Usuarios&quot;).get(&quot;usuario&quot;).get(&quot;nome&quot;)]" doc:name="Variable"/>
+        <foreach collection="#[payload.get('Usuarios').get(&quot;usuario&quot;).get(&quot;Enderecos&quot;).get(&quot;Endereco&quot;)]" doc:name="For Each">
+            <foreach doc:name="For Each">
+                <choice doc:name="Choice">
+                    <when expression="payload.get(&quot;enderecoPadrao&quot;).toString() == &quot;S&quot;">
+                        <set-variable variableName="EnderecoPadrao" value="#[payload]" doc:name="EnderecoPadrao"/>
+                    </when>
+                    <otherwise>
+                        <logger message="#[&quot;erro&quot;]" level="INFO" doc:name="Leia Notes" doc:description="Por algum motivo do qual n&#227;o sei, ele n&#227;o esta aceitando &quot;S&quot; como True, segue anexo da express&#227;o no Email. 
+Portanto deixei tambem em default, para que ele grave o ultimo endereco como Default. (&quot;CURIOSO&quot;)"/>
+                        <set-variable variableName="EnderecoPadrao" value="#[payload]" doc:name="EnderecoPadrao"/>
+                    </otherwise>
+                </choice>
+            </foreach>
+        </foreach>
+    </sub-flow>
+    <sub-flow name="gravaUsuario">
+        <dw:transform-message doc:name="Transform Message" metadata:id="2a814b21-9cea-4476-8d4a-44f924914bd1">
+            <dw:input-variable mimeType="application/json" variableName="jsonUsuario"/>
+            <dw:input-variable mimeType="application/json" variableName="payloadInicial"/>
+            <dw:input-variable mimeType="application/json" variableName="EnderecoPadrao"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	nome: flowVars.jsonUsuario.usuario.nome,
+	sobreNome: flowVars.jsonUsuario.usuario.sobrenome,
+	sexo: flowVars.jsonUsuario.usuario.sexo,
+	telefone: flowVars.jsonUsuario.usuario.telefone,
+	usuarioAtivo: flowVars.jsonUsuario.usuario.UsuarioAtivo,
+	enderecoPadrao: flowVars.EnderecoPadrao,
+	Enderecos: flowVars.payloadInicial.Usuarios.usuario.Enderecos
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <db:insert config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[INSERT INTO 'usuarios' (usuario,dados) VALUES ("lucas",#[payload]);]]></db:parameterized-query>
+        </db:insert>
+
+    </sub-flow>
+
+</mule>

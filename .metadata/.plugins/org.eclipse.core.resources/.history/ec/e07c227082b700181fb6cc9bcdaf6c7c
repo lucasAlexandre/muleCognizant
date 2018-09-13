@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:jdbc-ee="http://www.mulesoft.org/schema/mule/ee/jdbc"
+      xmlns:batch="http://www. . . . .
+                  . . . . . . . . . . .
+                    . . . . . . . . . . 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+   <file:connector name="File" autoDelete="false"  streaming="false" validateConnections="true" doc:name="File"/>
+    <spring:beans>
+        <spring:bean id="datasource" name="datasource" class="org.enhydra.jdbc.standard.StandardXADataSource" destroy-method="shutdown">
+            <spring:property name="driverName" value="org.apache.derby.jdbc.EmbeddedDriver"/>
+            <spring:property name="url" value="jdbc:derby:mydemodb"/>
+        </spring:bean>
+        <spring:bean id="dbinitialization" name="dbinit" class="utils.memorydb.DBInitialization" scope="singleton"/>
+    </spring:beans>
+    <db:derby-config name="Derby_Configuration" url="jdbc:derby:mydemodb;create=true" doc:name="Derby Configuration"/>
+   <!-- Flow -->
+    <flow name="myDemoDerbyDatabaseFlow">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="1000" timeUnit="DAYS"/>
+            <logger message="****************************Started*****************************8" level="INFO" doc:name="Logger"/>
+        </poll>
+        <mulerequester:request resource="file://D:/Accounts/RB/POC/UK_EU_DSFCST_IL.csv?autoDelete=false" doc:name="IL_File_Read"/>
+        <set-payload value="I_A,I_B,I_C,I_D#['\n']#[message.payloadAs(java.lang.String)]" mimeType="application/csv" doc:name="Set Payload"/>
+<!-- Creating ArrayList for Bulk Insert -->
+       <dw:transform-message metadata:id="e71ef32c-63ce-49ca-bbed-3b7f573ee4a2" doc:name="Iterable_For_Bulk_Update">
+            <dw:input-payload mimeType="application/csv"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+      A: payload01[0],
+      B: payload01[1],
+      C: payload01[2],
+      D: payload01[3]
+})]]></dw:set-payload>
+        </dw:transform-message>
+<!-- Bulk Insertion in Derby table -->
+        <db:insert config-ref="Derby_Configuration" bulkMode="true" doc:name="BULK_Inset_ILFile">
+            <db:parameterized-query><![CDATA[INSERT INTO IL_FILE (A,B,C,D) VALUES (#[payload.A], #[payload.B], #[payload.C], #[payload.D])]]></db:parameterized-query>
+        </db:insert>
+<!-- Select query execution from Derby table --> 
+<db:select config-ref="Derby_Configuration" doc:name="QueryDerby">
+            <db:parameterized-query><![CDATA[Select * from IL_FILE
+where A='24903' and B='0035069' and C='20161107']]></db:parameterized-query>
+        </db:select>
+        <logger message="*********************End Transforming**********************" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>

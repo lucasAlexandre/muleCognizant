@@ -1,0 +1,28 @@
+{
+  "$id": "https://example.com/person.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "usuarioJSON",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "The person's first name."
+    },
+    "Sobrenome": {
+      "type": "string",
+      "description": "The person's last name."
+    },
+    "telefone": {
+      "description": "Personal Telefone",
+      "type": "string",
+    },
+    "sexo": {
+      "description": "Personal Genre",
+      "type": "string",
+    },
+    "UsuarioAtivo": {
+      "description": "Is active user",
+      "type": "string",
+    }
+  }
+}

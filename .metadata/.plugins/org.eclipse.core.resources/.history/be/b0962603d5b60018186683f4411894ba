@@ -1,0 +1,9 @@
+{
+  "usuario": {
+    "nome": "",
+    "sobrenome": "",
+    "telefone": "",
+    "sexo": "",
+    "UsuarioAtivo": ""
+  }
+}

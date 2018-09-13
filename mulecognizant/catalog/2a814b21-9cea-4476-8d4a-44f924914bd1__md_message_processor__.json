@@ -1,0 +1,26 @@
+{
+    "inputMessageMetadata": {
+        "flowVariables": {
+            "payloadInicial": {
+                "connectorName": "#_custom_mule_metadata_type_#",
+                "typeId": "inicialJSON"
+            },
+            "jsonUsuario": {
+                "connectorName": "#_custom_mule_metadata_type_#",
+                "typeId": "usuarioTratamento"
+            },
+            "EnderecoPadrao": {
+                "connectorName": "#_custom_mule_metadata_type_#",
+                "typeId": "enderecoPadrao"
+            }
+        }
+    },
+    "outputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "#_custom_mule_metadata_type_#",
+            "typeId": "usuarioFinal"
+        }
+    },
+    "id": "2a814b21-9cea-4476-8d4a-44f924914bd1",
+    "version": "5.2.0.0"
+}

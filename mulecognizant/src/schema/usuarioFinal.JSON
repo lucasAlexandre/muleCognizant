@@ -1,0 +1,32 @@
+{
+  "nome": "",
+  "sobreNome": "",
+  "sexo": "",
+  "telefone": "",
+  "usuarioAtivo": "",
+  "enderecoPadrao": {
+    "logradouro": "Rua Antonio João de Medeiros",
+    "numero": "3122",
+    "complemento": "casa 20",
+    "cep": "08140060",
+    "enderecoPadrao": "N"
+  },
+  "Enderecos": {
+    "Endereco": [
+      {
+        "logradouro": "Rua Antonio João de Medeiros",
+        "numero": "311",
+        "complemento": "casa 20",
+        "cep": "08140060",
+        "enderecoPadrao": "S"
+      },
+      {
+        "logradouro": "Rua Antonio João de Medeiros",
+        "numero": "3122",
+        "complemento": "casa 20",
+        "cep": "08140060",
+        "enderecoPadrao": "N"
+      }
+    ]
+  }
+}
